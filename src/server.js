@@ -11,9 +11,11 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'http://localhost:5173',
+    'http://localhost:3000',
     'http://localhost:3001',
     'https://termini.pro',
     'https://www.termini.pro',
+    'https://cozy-kulfi-a439e1.netlify.app',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true,
