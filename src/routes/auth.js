@@ -44,9 +44,9 @@ router.post('/register', [
         `INSERT INTO subscriptions (business_id, plan, status) VALUES ($1, 'starter', 'trialing')`,
         [business.rows[0].id]
       );
-      await client.query(
-        `INSERT INTO staff (business_id, user_id, name) VALUES ($1, $2, $3)`,
-        [business.rows[0].id, user.rows[0].id, name]
+     await client.query(
+        `INSERT INTO subscriptions (business_id, plan, status, trial_ends_at) VALUES ($1, 'starter', 'trialing', NOW() + INTERVAL '14 days')`,
+        [business.rows[0].id]
       );
       return { user: user.rows[0], business: business.rows[0] };
     });
