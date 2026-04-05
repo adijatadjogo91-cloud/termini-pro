@@ -7,7 +7,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 router.use(authenticate);
 
-router.post('/:businessId/chat', requireBusiness, requirePlan('pro'), checkAIQuota, async (req, res, next) => {
+router.post('/:businessId/chat', requireBusiness, checkAIQuota, async (req, res, next) => {
   try {
     const { message, history = [] } = req.body;
     if (!message?.trim()) return res.status(400).json({ error: 'Poruka je obavezna.' });
