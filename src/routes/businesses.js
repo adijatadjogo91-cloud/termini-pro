@@ -120,4 +120,37 @@ router.get('/:businessId/dashboard', requireBusiness, async (req, res, next) => 
   } catch (err) { next(err); }
 });
 
+// Uposlenici
+router.get('/:businessId/staff', requireBusiness, async (req, res, next) => {
+  try {
+    const staff = await db.queryAll(
+      `SELECT id, name, color, is_active FROM staff WHERE business_id = $1 AND is_active = TRUE ORDER BY name ASC`,
+      [req.params.businessId]
+    );
+    res.json({ staff });
+  } catch (err) { next(err); }
+});
+
+router.post('/:businessId/staff', requireBusiness, async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'Ime je obavezno.' });
+    const member = await db.queryOne(
+      `INSERT INTO staff (business_id, user_id, name) VALUES ($1, $2, $3) RETURNING id, name`,
+      [req.params.businessId, req.user.id, name.trim()]
+    );
+    res.status(201).json({ staff: member });
+  } catch (err) { next(err); }
+});
+
+router.delete('/:businessId/staff/:staffId', requireBusiness, async (req, res, next) => {
+  try {
+    await db.query(
+      `UPDATE staff SET is_active = FALSE WHERE id = $1 AND business_id = $2`,
+      [req.params.staffId, req.params.businessId]
+    );
+    res.json({ message: 'Uposlenik obrisan.' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
