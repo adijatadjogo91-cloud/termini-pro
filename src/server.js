@@ -42,7 +42,21 @@ app.use('/api/payments',     require('./routes/payments'));
 app.use('/api/ai',           require('./routes/ai'));
 app.use('/api/webhooks',     require('./routes/webhooks'));
 app.use('/api/public',       require('./routes/public'));
-
+app.get('/test-email', async (req, res) => {
+  const { Resend } = require('resend');
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  try {
+    await resend.emails.send({
+      from: 'termini.pro <podsjetnici@termini.pro>',
+      to: 'adijatadjogo91@gmail.com',
+      subject: 'Test email — termini.pro',
+      html: '<h2 style="color:#1a7a4a">termini.pro</h2><p>Email podsjetnici rade! 🎉</p>'
+    });
+    res.json({ status: 'Email poslan!' });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 app.use((err, req, res, next) => {
