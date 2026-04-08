@@ -11,7 +11,6 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-// ─── SMS ───────────────────────────────────────────────
 async function posaljiSMS(telefon, poruka) {
   if (!client || !FROM_NUMBER) {
     console.log(`[SMS - TEST] ${telefon}: ${poruka}`);
@@ -25,7 +24,6 @@ async function posaljiSMS(telefon, poruka) {
   }
 }
 
-// ─── EMAIL ─────────────────────────────────────────────
 async function posaljiEmail(email, naslov, poruka) {
   if (!resend) {
     console.log(`[EMAIL - TEST] ${email}: ${poruka}`);
@@ -51,7 +49,6 @@ async function posaljiEmail(email, naslov, poruka) {
   }
 }
 
-// ─── POTVRDA TERMINA ───────────────────────────────────
 async function sendConfirmationSMS(klijent, appointment, service) {
   const vrijeme = new Date(appointment.starts_at).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
   const datum = new Date(appointment.starts_at).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
@@ -72,7 +69,6 @@ async function sendConfirmationSMS(klijent, appointment, service) {
   }
 }
 
-// ─── DNEVNI PODSJETNICI ────────────────────────────────
 async function sendDailyReminders() {
   console.log('[CRON] Provjera podsjetnika...');
   const tomorrow = new Date();
@@ -80,9 +76,9 @@ async function sendDailyReminders() {
   const date = tomorrow.toISOString().split('T')[0];
 
   const appointments = await db.queryAll(
-    `SELECT a.id, a.starts_at, 
+    `SELECT a.id, a.starts_at,
             c.name AS client_name, c.phone AS client_phone, c.email AS client_email,
-            s.name AS service_name, 
+            s.name AS service_name,
             b.name AS business_name, b.phone AS business_phone
      FROM appointments a
      JOIN clients c ON c.id = a.client_id
@@ -100,13 +96,11 @@ async function sendDailyReminders() {
   for (const appt of appointments) {
     const vrijeme = new Date(appt.starts_at).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
 
-    // SMS — ako ima telefon
     if (appt.client_phone) {
       const poruka = `Podsjetnik: Vaš termin u ${appt.business_name} je sutra u ${vrijeme} (${appt.service_name}). Za otkazivanje pozovite ${appt.business_phone || 'salon'}.`;
       await posaljiSMS(appt.client_phone, poruka);
     }
 
-    // EMAIL — ako ima email
     if (appt.client_email) {
       const poruka = `Poštovani/a <strong>${appt.client_name}</strong>,<br><br>
       Podsjećamo vas na sutrašnji termin! 📅<br><br>
@@ -121,9 +115,25 @@ async function sendDailyReminders() {
   }
 }
 
-// ─── REAKTIVACIJA ──────────────────────────────────────
 async function sendReactivationMessages() {
   console.log('[CRON] Provjera neaktivnih klijenata...');
 }
 
-module.exports = { sendConfirmationSMS, sendDailyReminders, sendReactivationMessages };
+async function sendBusinessNotification(business, booking) {
+  if (!business?.email) return;
+  const vrijeme = new Date(booking.startsAt).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
+  const datum = new Date(booking.startsAt).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
+  const poruka = `
+    Novi termin je zakazan! 🎉<br><br>
+    👤 <strong>Klijent:</strong> ${booking.clientName}<br>
+    📞 <strong>Telefon:</strong> ${booking.clientPhone}<br>
+    📧 <strong>Email:</strong> ${booking.clientEmail}<br>
+    📋 <strong>Usluga:</strong> ${booking.serviceName}<br>
+    📅 <strong>Datum:</strong> ${datum}<br>
+    🕐 <strong>Vrijeme:</strong> ${vrijeme}<br>
+    💰 <strong>Cijena:</strong> ${booking.price} KM
+  `;
+  await posaljiEmail(business.email, `Novi termin — ${booking.clientName} — ${datum}`, poruka);
+}
+
+module.exports = { sendConfirmationSMS, sendDailyReminders, sendReactivationMessages, sendBusinessNotification };
