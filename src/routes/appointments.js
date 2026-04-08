@@ -130,5 +130,69 @@ router.delete('/:businessId/:id', requireBusiness, async (req, res, next) => {
     res.json({ message: 'Termin je otkazan.' });
   } catch (err) { next(err); }
 });
+// Otkazivanje putem tokena (za klijente)
+router.get('/cancel/:token', async (req, res, next) => {
+  try {
+    const appointment = await db.queryOne(
+      `SELECT a.*, b.name AS business_name, b.email AS business_email,
+              c.name AS client_name, s.name AS service_name
+       FROM appointments a
+       JOIN businesses b ON b.id = a.business_id
+       JOIN clients c ON c.id = a.client_id
+       JOIN services s ON s.id = a.service_id
+       WHERE a.cancel_token = $1`,
+      [req.params.token]
+    );
+    if (!appointment) return res.status(404).json({ error: 'Termin nije pronađen.' });
+    if (appointment.status === 'cancelled') return res.status(400).json({ error: 'Termin je već otkazan.' });
+    res.json({ appointment });
+  } catch (err) { next(err); }
+});
 
+router.post('/cancel/:token', async (req, res, next) => {
+  try {
+    const appointment = await db.queryOne(
+      `UPDATE appointments SET status = 'cancelled'
+       WHERE cancel_token = $1 AND status NOT IN ('cancelled', 'completed')
+       RETURNING *`,
+      [req.params.token]
+    );
+    if (!appointment) return res.status(404).json({ error: 'Termin nije pronađen ili je već otkazan.' });
+
+    // Obavijest salonu
+    const full = await db.queryOne(
+      `SELECT a.starts_at, b.name AS business_name, b.email AS business_email,
+              c.name AS client_name, s.name AS service_name
+       FROM appointments a
+       JOIN businesses b ON b.id = a.business_id
+       JOIN clients c ON c.id = a.client_id
+       JOIN services s ON s.id = a.service_id
+       WHERE a.id = $1`,
+      [appointment.id]
+    );
+    if (full?.business_email) {
+      const { posaljiEmail } = require('../services/notifications');
+      const datum = new Date(full.starts_at).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
+      const vrijeme = new Date(full.starts_at).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
+      // koristimo direktno resend
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: 'termini.pro <podsjetnici@termini.pro>',
+        to: full.business_email,
+        subject: `Otkazan termin — ${full.client_name} — ${datum}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+            <h2 style="color: #e24b4a;">termini.pro — Otkazan termin</h2>
+            <p>Klijent je otkazao termin:</p>
+            <p>👤 <strong>${full.client_name}</strong></p>
+            <p>📋 <strong>${full.service_name}</strong></p>
+            <p>📅 <strong>${datum} u ${vrijeme}</strong></p>
+          </div>
+        `
+      });
+    }
+    res.json({ message: 'Termin je uspješno otkazan.' });
+  } catch (err) { next(err); }
+});
 module.exports = router;
