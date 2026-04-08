@@ -126,6 +126,11 @@ router.post('/b/:slug/book', async (req, res, next) => {
       'SELECT name, email, phone FROM businesses WHERE id = $1',
       [business.id]
     );
+   const { sendBusinessNotification, sendConfirmationSMS } = require('../services/notifications');
+    const businessFull = await db.queryOne(
+      'SELECT name, email, phone FROM businesses WHERE id = $1',
+      [business.id]
+    );
     if (businessFull?.email) {
       await sendBusinessNotification(businessFull, {
         clientName: name,
@@ -135,6 +140,19 @@ router.post('/b/:slug/book', async (req, res, next) => {
         startsAt: startsAt,
         price: service.price
       });
+    }
+
+    // Email potvrda klijentu sa linkom za otkazivanje
+    const appointmentFull = await db.queryOne(
+      'SELECT id, starts_at, ends_at, cancel_token FROM appointments WHERE id = $1',
+      [appointment.id]
+    );
+    if (email || phone) {
+      await sendConfirmationSMS(
+        { name, phone, email, business_name: businessFull.name },
+        appointmentFull,
+        service
+      );
     }
     res.status(201).json({
       message: 'Termin je uspješno zakazan!',
