@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const dayjs = require('dayjs');
 const db = require('../db');
+const { sendBusinessNotification, sendConfirmationSMS } = require('../services/notifications');
 
 router.get('/b/:slug', async (req, res, next) => {
   try {
@@ -80,8 +81,8 @@ router.get('/b/:slug/slots', async (req, res, next) => {
 router.post('/b/:slug/book', async (req, res, next) => {
   try {
     const { name, phone, email, serviceId, startsAt } = req.body;
-    if (!name || !phone || !serviceId || !startsAt) {
-      return res.status(400).json({ error: 'Ime, telefon, usluga i termin su obavezni.' });
+    if (!name || (!phone && !email) || !serviceId || !startsAt) {
+      return res.status(400).json({ error: 'Ime, kontakt (telefon ili email), usluga i termin su obavezni.' });
     }
     const business = await db.queryOne(
       `SELECT b.id FROM businesses b
@@ -110,23 +111,18 @@ router.post('/b/:slug/book', async (req, res, next) => {
     if (!clientRow) {
       clientRow = await db.queryOne(
         'INSERT INTO clients (business_id, name, phone, email) VALUES ($1, $2, $3, $4) RETURNING id',
-        [business.id, name, phone, email || null]
+        [business.id, name, phone || null, email || null]
       );
     }
     const appointment = await db.queryOne(
       `INSERT INTO appointments
         (business_id, client_id, service_id, starts_at, ends_at, price, status, source)
        VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'online')
-       RETURNING id, starts_at, ends_at, status`,
+       RETURNING id, starts_at, ends_at, status, cancel_token`,
       [business.id, clientRow.id, serviceId, startsAt, endsAt, service.price]
     );
+
     // Email obavijest salonu
-    const { sendBusinessNotification } = require('../services/notifications');
-    const businessFull = await db.queryOne(
-      'SELECT name, email, phone FROM businesses WHERE id = $1',
-      [business.id]
-    );
-   const { sendBusinessNotification, sendConfirmationSMS } = require('../services/notifications');
     const businessFull = await db.queryOne(
       'SELECT name, email, phone FROM businesses WHERE id = $1',
       [business.id]
@@ -143,17 +139,14 @@ router.post('/b/:slug/book', async (req, res, next) => {
     }
 
     // Email potvrda klijentu sa linkom za otkazivanje
-    const appointmentFull = await db.queryOne(
-      'SELECT id, starts_at, ends_at, cancel_token FROM appointments WHERE id = $1',
-      [appointment.id]
-    );
     if (email || phone) {
       await sendConfirmationSMS(
         { name, phone, email, business_name: businessFull.name },
-        appointmentFull,
+        appointment,
         service
       );
     }
+
     res.status(201).json({
       message: 'Termin je uspješno zakazan!',
       appointment: {
