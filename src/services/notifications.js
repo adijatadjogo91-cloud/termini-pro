@@ -52,9 +52,10 @@ async function posaljiEmail(email, naslov, poruka) {
 async function sendConfirmationSMS(klijent, appointment, service) {
   const vrijeme = new Date(appointment.starts_at).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
   const datum = new Date(appointment.starts_at).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
+  const cancelLink = `https://termini.pro/otkazi/${appointment.cancel_token}`;
 
   if (klijent?.phone) {
-    const poruka = `Potvrda termina: ${service.name} u ${klijent.business_name} — ${datum} u ${vrijeme}. Za otkazivanje nas kontaktirajte.`;
+    const poruka = `Potvrda termina: ${service.name} u ${klijent.business_name} — ${datum} u ${vrijeme}. Za otkazivanje: ${cancelLink}`;
     await posaljiSMS(klijent.phone, poruka);
   }
 
@@ -64,7 +65,9 @@ async function sendConfirmationSMS(klijent, appointment, service) {
     📋 <strong>Usluga:</strong> ${service.name}<br>
     📅 <strong>Datum:</strong> ${datum}<br>
     🕐 <strong>Vrijeme:</strong> ${vrijeme}<br><br>
-    Za otkazivanje kontaktirajte salon.`;
+    Ako želite otkazati termin, kliknite ovdje:<br>
+    <a href="${cancelLink}" style="color: #e24b4a;">Otkaži termin</a><br><br>
+    Vidimo se!`;
     await posaljiEmail(klijent.email, `Potvrda termina — ${datum}`, poruka);
   }
 }
@@ -76,7 +79,7 @@ async function sendDailyReminders() {
   const date = tomorrow.toISOString().split('T')[0];
 
   const appointments = await db.queryAll(
-    `SELECT a.id, a.starts_at,
+    `SELECT a.id, a.starts_at, a.cancel_token,
             c.name AS client_name, c.phone AS client_phone, c.email AS client_email,
             s.name AS service_name,
             b.name AS business_name, b.phone AS business_phone
@@ -95,9 +98,10 @@ async function sendDailyReminders() {
 
   for (const appt of appointments) {
     const vrijeme = new Date(appt.starts_at).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
+    const cancelLink = `https://termini.pro/otkazi/${appt.cancel_token}`;
 
     if (appt.client_phone) {
-      const poruka = `Podsjetnik: Vaš termin u ${appt.business_name} je sutra u ${vrijeme} (${appt.service_name}). Za otkazivanje pozovite ${appt.business_phone || 'salon'}.`;
+      const poruka = `Podsjetnik: Vaš termin u ${appt.business_name} je sutra u ${vrijeme} (${appt.service_name}). Za otkazivanje: ${cancelLink}`;
       await posaljiSMS(appt.client_phone, poruka);
     }
 
@@ -107,7 +111,8 @@ async function sendDailyReminders() {
       📋 <strong>Usluga:</strong> ${appt.service_name}<br>
       🏪 <strong>Salon:</strong> ${appt.business_name}<br>
       🕐 <strong>Vrijeme:</strong> ${vrijeme}<br><br>
-      Za otkazivanje kontaktirajte salon na <strong>${appt.business_phone || 'broj salona'}</strong>.`;
+      Za otkazivanje kliknite ovdje:<br>
+      <a href="${cancelLink}" style="color: #e24b4a;">Otkaži termin</a>`;
       await posaljiEmail(appt.client_email, `Podsjetnik: Vaš termin sutra u ${vrijeme}`, poruka);
     }
 
