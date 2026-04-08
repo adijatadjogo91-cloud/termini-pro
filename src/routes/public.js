@@ -120,6 +120,22 @@ router.post('/b/:slug/book', async (req, res, next) => {
        RETURNING id, starts_at, ends_at, status`,
       [business.id, clientRow.id, serviceId, startsAt, endsAt, service.price]
     );
+    // Email obavijest salonu
+    const { sendBusinessNotification } = require('../services/notifications');
+    const businessFull = await db.queryOne(
+      'SELECT name, email, phone FROM businesses WHERE id = $1',
+      [business.id]
+    );
+    if (businessFull?.email) {
+      await sendBusinessNotification(businessFull, {
+        clientName: name,
+        clientPhone: phone || 'nije upisao',
+        clientEmail: email || 'nije upisao',
+        serviceName: service.name,
+        startsAt: startsAt,
+        price: service.price
+      });
+    }
     res.status(201).json({
       message: 'Termin je uspješno zakazan!',
       appointment: {
