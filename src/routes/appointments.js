@@ -4,7 +4,10 @@ const dayjs = require('dayjs');
 const db = require('../db');
 const { authenticate, requireBusiness } = require('../middleware/auth');
 
-router.use(authenticate);
+router.use((req, res, next) => {
+  if (req.path.startsWith('/cancel/')) return next();
+  authenticate(req, res, next);
+});
 
 router.get('/:businessId', requireBusiness, async (req, res, next) => {
   try {
