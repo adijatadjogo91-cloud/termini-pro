@@ -27,24 +27,27 @@ router.get('/:businessId', requireBusiness, async (req, res, next) => {
 
 router.patch('/:businessId', requireBusiness, async (req, res, next) => {
   try {
-    const { name, type, address, city, phone, email, description, working_hours, slot_duration } = req.body;
-    const business = await db.queryOne(
-      `UPDATE businesses SET
-        name          = COALESCE($1, name),
-        type          = COALESCE($2, type),
-        address       = COALESCE($3, address),
-        city          = COALESCE($4, city),
-        phone         = COALESCE($5, phone),
-        email         = COALESCE($6, email),
-        description   = COALESCE($7, description),
-        working_hours = COALESCE($8, working_hours),
-        slot_duration = COALESCE($9, slot_duration)
-       WHERE id = $10 AND owner_id = $11
-       RETURNING *`,
-      [name, type, address, city, phone, email, description,
-       working_hours ? JSON.stringify(working_hours) : null,
-       slot_duration, req.params.businessId, req.user.id]
-    );
+   const { name, type, address, city, phone, email, description, working_hours, slot_duration, blocked_dates } = req.body;
+  const business = await db.queryOne(
+  `UPDATE businesses SET
+    name          = COALESCE($1, name),
+    type          = COALESCE($2, type),
+    address       = COALESCE($3, address),
+    city          = COALESCE($4, city),
+    phone         = COALESCE($5, phone),
+    email         = COALESCE($6, email),
+    description   = COALESCE($7, description),
+    working_hours = COALESCE($8, working_hours),
+    slot_duration = COALESCE($9, slot_duration),
+    blocked_dates = COALESCE($10, blocked_dates)
+   WHERE id = $11 AND owner_id = $12
+   RETURNING *`,
+  [name, type, address, city, phone, email, description,
+   working_hours ? JSON.stringify(working_hours) : null,
+   slot_duration,
+   blocked_dates ? JSON.stringify(blocked_dates) : null,
+   req.params.businessId, req.user.id]
+);
     res.json({ business });
   } catch (err) { next(err); }
 });
