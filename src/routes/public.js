@@ -34,13 +34,13 @@ router.get('/b/:slug/slots', async (req, res, next) => {
     if (!date || !serviceId) {
       return res.status(400).json({ error: 'Datum i usluga su obavezni.' });
     }
-    const business = await db.queryOne(
-      `SELECT b.id, b.working_hours, b.slot_duration
-       FROM businesses b
-       JOIN subscriptions s ON s.business_id = b.id
-       WHERE b.slug = $1 AND s.status IN ('trialing', 'active')`,
-      [req.params.slug]
-    );
+   const business = await db.queryOne(
+  `SELECT b.id, b.working_hours, b.slot_duration, b.blocked_dates
+   FROM businesses b
+   JOIN subscriptions s ON s.business_id = b.id
+   WHERE b.slug = $1 AND s.status IN ('trialing', 'active')`,
+  [req.params.slug]
+);
     if (!business) return res.status(404).json({ error: 'Salon nije pronađen.' });
     const service = await db.queryOne(
       'SELECT duration FROM services WHERE id = $1 AND business_id = $2 AND is_active = TRUE',
