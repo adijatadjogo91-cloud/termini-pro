@@ -51,6 +51,10 @@ router.get('/b/:slug/slots', async (req, res, next) => {
     const dayKey = dayMap[dayjs(date).day()];
     const hours = business.working_hours?.[dayKey];
     if (!hours) return res.json({ slots: [], closed: true });
+    const blockedDates = business.blocked_dates || [];
+    if (blockedDates.includes(date)) {
+    return res.json({ slots: [], closed: true });
+    }
     const slotDuration = business.slot_duration || 30;
     const start = dayjs(`${date} ${hours.from}`);
     const end = dayjs(`${date} ${hours.to}`);
