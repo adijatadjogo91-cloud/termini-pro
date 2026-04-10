@@ -162,5 +162,21 @@ router.post('/b/:slug/book', async (req, res, next) => {
     });
   } catch (err) { next(err); }
 });
-
+router.get('/b/:slug/gallery', async (req, res, next) => {
+  try {
+    const business = await db.queryOne(
+      `SELECT b.id FROM businesses b
+       JOIN subscriptions s ON s.business_id = b.id
+       WHERE b.slug = $1 AND s.status IN ('trialing', 'active')`,
+      [req.params.slug]
+    );
+    if (!business) return res.status(404).json({ error: 'Salon nije pronađen.' });
+    const gallery = await db.queryAll(
+      `SELECT id, image_url, caption FROM gallery 
+       WHERE business_id = $1 ORDER BY sort_order ASC, created_at DESC`,
+      [business.id]
+    );
+    res.json({ gallery });
+  } catch (err) { next(err); }
+});
 module.exports = router;
