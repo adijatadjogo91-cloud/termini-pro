@@ -141,4 +141,64 @@ async function sendBusinessNotification(business, booking) {
   await posaljiEmail(business.email, `Novi termin — ${booking.clientName} — ${datum}`, poruka);
 }
 
-module.exports = { sendConfirmationSMS, sendDailyReminders, sendReactivationMessages, sendBusinessNotification };
+async function sendReviewRequest(appointment) {
+  if (!appointment.client_email) return;
+  const reviewLink = `https://termini.pro/recenzija/${appointment.review_token}`;
+  const datum = new Date(appointment.starts_at).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
+  const poruka = `
+    Poštovani/a <strong>${appointment.client_name}</strong>,<br><br>
+    Hvala što ste posjetili <strong>${appointment.business_name}</strong>! 🌟<br><br>
+    Molimo vas da ostavite recenziju vašeg posjeta od ${datum}.<br>
+    Vaše mišljenje nam puno znači!<br><br>
+    <a href="${reviewLink}" style="
+      background: #1a7a4a; color: white; padding: 12px 24px;
+      border-radius: 8px; text-decoration: none; font-weight: bold;
+      display: inline-block; margin: 16px 0;
+    ">⭐ Ostavite recenziju</a><br><br>
+    Hvala vam!<br>
+    Tim termini.pro
+  `;
+  await posaljiEmail(appointment.client_email, `Kako ste zadovoljni posjetom? — ${appointment.business_name}`, poruka);
+}
+
+async function sendReviewRequest(appointment) {
+  if (!appointment.client_email) return;
+  const reviewLink = `https://termini.pro/recenzija/${appointment.review_token}`;
+  const datum = new Date(appointment.starts_at).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
+  const poruka = `
+    Poštovani/a <strong>${appointment.client_name}</strong>,<br><br>
+    Hvala što ste posjetili <strong>${appointment.business_name}</strong>! 🌟<br><br>
+    Molimo vas da ostavite recenziju vašeg posjeta od ${datum}.<br>
+    Vaše mišljenje nam puno znači!<br><br>
+    <a href="${reviewLink}" style="
+      background: #1a7a4a; color: white; padding: 12px 24px;
+      border-radius: 8px; text-decoration: none; font-weight: bold;
+      display: inline-block; margin: 16px 0;
+    ">⭐ Ostavite recenziju</a><br><br>
+    Hvala vam!<br>
+    Tim termini.pro
+  `;
+  await posaljiEmail(appointment.client_email, `Kako ste zadovoljni posjetom? — ${appointment.business_name}`, poruka);
+}
+
+async function sendReviewRequest(appointment) {
+  if (!appointment.client_email) return;
+  const reviewLink = `https://termini.pro/recenzija/${appointment.review_token}`;
+  const datum = new Date(appointment.starts_at).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
+  const poruka = `
+    Poštovani/a <strong>${appointment.client_name}</strong>,<br><br>
+    Hvala što ste posjetili <strong>${appointment.business_name}</strong>! 🌟<br><br>
+    Molimo vas da ostavite recenziju vašeg posjeta od ${datum}.<br>
+    Vaše mišljenje nam puno znači!<br><br>
+    <a href="${reviewLink}" style="
+      background: #1a7a4a; color: white; padding: 12px 24px;
+      border-radius: 8px; text-decoration: none; font-weight: bold;
+      display: inline-block; margin: 16px 0;
+    ">⭐ Ostavite recenziju</a><br><br>
+    Hvala vam!<br>
+    Tim termini.pro
+  `;
+  await posaljiEmail(appointment.client_email, `Kako ste zadovoljni posjetom? — ${appointment.business_name}`, poruka);
+}
+
+module.exports = { sendConfirmationSMS, sendDailyReminders, sendReactivationMessages, sendBusinessNotification, sendReviewRequest };
