@@ -78,6 +78,10 @@ cron.schedule('0 9 * * *', () => {
 });
 
 cron.schedule('0 10 * * 1', () => {
+  cron.schedule('0 11 * * *', () => {
+  console.log('[CRON] Slanje zahtjeva za recenzije...');
+  sendReviewRequests();
+});
   console.log('[CRON] Sedmična reaktivacija neaktivnih klijenata...');
   sendReactivationMessages();
 });
