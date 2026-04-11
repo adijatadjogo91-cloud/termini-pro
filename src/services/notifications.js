@@ -162,10 +162,29 @@ async function sendReviewRequest(appointment) {
   await posaljiEmail(appointment.client_email, `Kako ste zadovoljni posjetom? — ${appointment.business_name}`, poruka);
 }
 
+async function sendWaitlistNotification(entry, bookingUrl) {
+  if (!entry.email) return;
+  const poruka = `
+    Poštovani/a <strong>${entry.name}</strong>,<br><br>
+    Odlične vijesti! 🎉<br><br>
+    Termin koji ste čekali je slobodan!<br><br>
+    Kliknite na link ispod da brzo zakažete:<br><br>
+    <a href="https://termini.pro/booking/${bookingUrl}" style="
+      background: #1a7a4a; color: white; padding: 12px 24px;
+      border-radius: 8px; text-decoration: none; font-weight: bold;
+      display: inline-block; margin: 16px 0;
+    ">📅 Zakaži termin</a><br><br>
+    Požurite — termini se brzo pune!<br><br>
+    Tim termini.pro
+  `;
+  await posaljiEmail(entry.email, `Termin je slobodan! — termini.pro`, poruka);
+}
+
 module.exports = {
   sendConfirmationSMS,
   sendDailyReminders,
   sendReactivationMessages,
   sendBusinessNotification,
-  sendReviewRequest
+  sendReviewRequest,
+  sendWaitlistNotification
 };
