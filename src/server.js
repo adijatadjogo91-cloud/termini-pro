@@ -70,7 +70,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const { sendDailyReminders, sendReactivationMessages } = require('./services/notifications');
+const { sendDailyReminders, sendReactivationMessages, sendReviewRequest } = require('./services/notifications');
 
 cron.schedule('0 9 * * *', () => {
   console.log('[CRON] Slanje dnevnih podsjetnika...');
@@ -78,6 +78,32 @@ cron.schedule('0 9 * * *', () => {
 });
 
 cron.schedule('0 10 * * 1', () => {
+ async function sendReviewRequests() {
+  const { Resend } = require('resend');
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const date = yesterday.toISOString().split('T')[0];
+  
+  const appointments = await db.queryAll(
+    `SELECT a.id, a.starts_at, r.review_token,
+            c.name AS client_name, c.email AS client_email,
+            b.name AS business_name
+     FROM appointments a
+     JOIN clients c ON c.id = a.client_id
+     JOIN businesses b ON b.id = a.business_id
+     LEFT JOIN reviews r ON r.appointment_id = a.id
+     WHERE DATE(a.starts_at) = $1
+       AND a.status = 'confirmed'
+       AND c.email IS NOT NULL
+       AND r.id IS NOT NULL
+       AND r.rating IS NULL`,
+    [date]
+  );
+  
+  for (const appt of appointments) {
+    await sendReviewRequest(appt);
+  }
+}
   cron.schedule('0 11 * * *', () => {
   console.log('[CRON] Slanje zahtjeva za recenzije...');
   sendReviewRequests();
