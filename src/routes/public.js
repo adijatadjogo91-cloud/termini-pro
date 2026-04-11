@@ -150,7 +150,11 @@ router.post('/b/:slug/book', async (req, res, next) => {
         service
       );
     }
-
+await db.query(
+  `INSERT INTO reviews (business_id, appointment_id, client_name)
+   VALUES ($1, $2, $3)`,
+  [business.id, appointment.id, name]
+);
     res.status(201).json({
       message: 'Termin je uspješno zakazan!',
       appointment: {
