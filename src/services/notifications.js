@@ -130,15 +130,16 @@ async function sendBusinessNotification(business, booking) {
   const vrijeme = new Date(booking.startsAt).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' });
   const datum = new Date(booking.startsAt).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
   const poruka = `
-    Novi termin je zakazan! 🎉<br><br>
-    👤 <strong>Klijent:</strong> ${booking.clientName}<br>
-    📞 <strong>Telefon:</strong> ${booking.clientPhone}<br>
-    📧 <strong>Email:</strong> ${booking.clientEmail}<br>
-    📋 <strong>Usluga:</strong> ${booking.serviceName}<br>
-    📅 <strong>Datum:</strong> ${datum}<br>
-    🕐 <strong>Vrijeme:</strong> ${vrijeme}<br>
-    💰 <strong>Cijena:</strong> ${booking.price} KM
-  `;
+  Novi termin je zakazan! 🎉<br><br>
+  👤 <strong>Klijent:</strong> ${booking.clientName}<br>
+  📞 <strong>Telefon:</strong> ${booking.clientPhone}<br>
+  📧 <strong>Email:</strong> ${booking.clientEmail}<br>
+  📋 <strong>Usluga:</strong> ${booking.serviceName}<br>
+  📅 <strong>Datum:</strong> ${datum}<br>
+  🕐 <strong>Vrijeme:</strong> ${vrijeme}<br>
+  💰 <strong>Cijena:</strong> ${booking.price} KM
+  ${booking.notes ? `<br>📝 <strong>Napomena:</strong> ${booking.notes}` : ''}
+`;
   await posaljiEmail(business.email, `Novi termin — ${booking.clientName} — ${datum}`, poruka);
 }
 
