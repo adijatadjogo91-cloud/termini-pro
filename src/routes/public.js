@@ -84,7 +84,7 @@ router.get('/b/:slug/slots', async (req, res, next) => {
 
 router.post('/b/:slug/book', async (req, res, next) => {
   try {
-    const { name, phone, email, serviceId, startsAt } = req.body;
+    const { name, phone, email, serviceId, startsAt, notes } = req.body;
     if (!name || (!phone && !email) || !serviceId || !startsAt) {
       return res.status(400).json({ error: 'Ime, kontakt (telefon ili email), usluga i termin su obavezni.' });
     }
@@ -118,13 +118,13 @@ router.post('/b/:slug/book', async (req, res, next) => {
         [business.id, name, phone || null, email || null]
       );
     }
-    const appointment = await db.queryOne(
-      `INSERT INTO appointments
-        (business_id, client_id, service_id, starts_at, ends_at, price, status, source)
-       VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'online')
-       RETURNING id, starts_at, ends_at, status, cancel_token`,
-      [business.id, clientRow.id, serviceId, startsAt, endsAt, service.price]
-    );
+   const appointment = await db.queryOne(
+  `INSERT INTO appointments
+    (business_id, client_id, service_id, starts_at, ends_at, price, status, source, notes)
+   VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'online', $7)
+   RETURNING id, starts_at, ends_at, status, cancel_token`,
+  [business.id, clientRow.id, serviceId, startsAt, endsAt, service.price, notes || null]
+);
 
     // Email obavijest salonu
     const businessFull = await db.queryOne(
@@ -132,14 +132,15 @@ router.post('/b/:slug/book', async (req, res, next) => {
       [business.id]
     );
     if (businessFull?.email) {
-      await sendBusinessNotification(businessFull, {
-        clientName: name,
-        clientPhone: phone || 'nije upisao',
-        clientEmail: email || 'nije upisao',
-        serviceName: service.name,
-        startsAt: startsAt,
-        price: service.price
-      });
+     await sendBusinessNotification(businessFull, {
+  clientName: name,
+  clientPhone: phone || 'nije upisao',
+  clientEmail: email || 'nije upisao',
+  serviceName: service.name,
+  startsAt: startsAt,
+  price: service.price,
+  notes: notes || null
+});
     }
 
     // Email potvrda klijentu sa linkom za otkazivanje
