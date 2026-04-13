@@ -76,5 +76,43 @@ router.delete('/:businessId/:imageId', requireBusiness, async (req, res, next) =
     res.json({ message: 'Slika obrisana.' });
   } catch (err) { next(err); }
 });
+// Upload loga
+router.post('/:businessId/logo', requireBusiness, upload.single('logo'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Logo je obavezan.' });
 
+    const fileName = `logos/${req.params.businessId}-${Date.now()}-${req.file.originalname}`;
+
+    const { error } = await supabase.storage
+      .from('gallery')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
+
+    if (error) return res.status(500).json({ error: 'Greška pri uploadu loga.' });
+
+    const { data: urlData } = supabase.storage
+      .from('gallery')
+      .getPublicUrl(fileName);
+
+    await db.query(
+      'UPDATE businesses SET logo_url = $1 WHERE id = $2',
+      [urlData.publicUrl, req.params.businessId]
+    );
+
+    res.json({ logo_url: urlData.publicUrl });
+  } catch (err) { next(err); }
+});
+
+// Obriši logo
+router.delete('/:businessId/logo', requireBusiness, async (req, res, next) => {
+  try {
+    await db.query(
+      'UPDATE businesses SET logo_url = NULL WHERE id = $1',
+      [req.params.businessId]
+    );
+    res.json({ message: 'Logo obrisan.' });
+  } catch (err) { next(err); }
+});
 module.exports = router;
