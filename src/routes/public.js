@@ -9,11 +9,25 @@ router.get('/b/:slug', async (req, res, next) => {
       `SELECT b.id, b.name, b.type, b.slug, b.description,
               b.address, b.city, b.phone, b.logo_url, b.working_hours
        FROM businesses b
-       JOIN subscriptions s ON s.business_id = b.id
-       WHERE b.slug = $1 AND s.status IN ('trialing', 'active')`,
+       LEFT JOIN subscriptions s ON s.business_id = b.id
+       WHERE b.slug = $1`,
       [req.params.slug]
     );
     if (!business) return res.status(404).json({ error: 'Salon nije pronađen.' });
+
+    const subActive = business.sub_status === 'active' || business.sub_status === 'trialing';
+    if (!subActive) {
+      return res.json({
+        inactive: true,
+        business: {
+          name: business.name,
+          phone: business.phone,
+          address: business.address,
+          city: business.city,
+          logo_url: business.logo_url,
+        }
+      });
+    }
     const services = await db.queryAll(
       `SELECT id, name, description, price, duration, color
        FROM services WHERE business_id = $1 AND is_active = TRUE
