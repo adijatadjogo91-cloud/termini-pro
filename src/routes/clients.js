@@ -112,5 +112,18 @@ router.get('/:businessId/:id/history', requireBusiness, async (req, res, next) =
     res.json({ appointments, stats });
   } catch (err) { next(err); }
 });
-
+// Blokiraj / odblokiraj klijenta
+router.patch('/:businessId/:id/block', requireBusiness, async (req, res, next) => {
+  try {
+    const { is_blocked } = req.body;
+    const client = await db.queryOne(
+      `UPDATE clients SET is_blocked = $1
+       WHERE id = $2 AND business_id = $3
+       RETURNING *`,
+      [is_blocked, req.params.id, req.params.businessId]
+    );
+    if (!client) return res.status(404).json({ error: 'Klijent nije pronađen.' });
+    res.json({ client });
+  } catch (err) { next(err); }
+});
 module.exports = router;
