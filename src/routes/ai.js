@@ -72,5 +72,41 @@ Odgovaraj na bosanskom jeziku, kratko i konkretno. Daj specifične savjete sa br
     res.json({ reply });
   } catch (err) { next(err); }
 });
+// Javna ruta za booking chatbot (bez autentifikacije)
+router.post('/public/chat', async (req, res, next) => {
+  try {
+    const { message, history = [], salonInfo, usluge } = req.body;
+    if (!message?.trim()) return res.status(400).json({ error: 'Poruka je obavezna.' });
 
+    const uslugeText = usluge?.map(u => `- ${u.name}: ${u.price} KM, trajanje ${u.duration} min`).join('\n') || 'Nema podataka';
+
+    const systemPrompt = `Ti si AI asistent za ${salonInfo?.name}. Odgovaraj kratko i prijateljski na bosanskom jeziku.
+
+Informacije:
+- Naziv: ${salonInfo?.name}
+- Adresa: ${salonInfo?.address || 'nije navedeno'}, ${salonInfo?.city || ''}
+- Telefon: ${salonInfo?.phone || 'nije naveden'}
+- Opis: ${salonInfo?.description || 'nije naveden'}
+
+Usluge:
+${uslugeText}
+
+Pomozi klijentu da odabere uslugu i zakaže termin. Ako pita za termin, reci mu da odabere uslugu na stranici.`;
+
+    const messages = [
+      ...history.slice(-10),
+      { role: 'user', content: message }
+    ];
+
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 300,
+      system: systemPrompt,
+      messages,
+    });
+
+    const reply = response.content[0]?.text || 'Žao mi je, pokušajte ponovo.';
+    res.json({ reply });
+  } catch (err) { next(err); }
+});
 module.exports = router;
