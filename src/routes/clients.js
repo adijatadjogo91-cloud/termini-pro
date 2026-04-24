@@ -126,4 +126,37 @@ router.patch('/:businessId/:id/block', requireBusiness, async (req, res, next) =
     res.json({ client });
   } catch (err) { next(err); }
 });
+// Iskoristi loyalty bodove
+router.post('/:businessId/:id/redeem', requireBusiness, async (req, res, next) => {
+  try {
+    const { points } = req.body;
+    if (!points || points <= 0) {
+      return res.status(400).json({ error: 'Unesite broj bodova.' });
+    }
+
+    const klijent = await db.queryOne(
+      'SELECT * FROM clients WHERE id = $1 AND business_id = $2',
+      [req.params.id, req.params.businessId]
+    );
+    if (!klijent) return res.status(404).json({ error: 'Klijent nije pronađen.' });
+    if (klijent.loyalty_points < points) {
+      return res.status(400).json({ error: 'Klijent nema dovoljno bodova.' });
+    }
+
+    const popust = points; // 1 bod = 1 KM popusta
+
+    await db.query(
+      `UPDATE clients SET loyalty_points = loyalty_points - $1 WHERE id = $2`,
+      [points, req.params.id]
+    );
+
+    await db.query(
+      `INSERT INTO loyalty_points (business_id, client_id, points, description)
+       VALUES ($1, $2, $3, $4)`,
+      [req.params.businessId, req.params.id, -points, `Iskorišteno ${points} bodova — popust ${popust} KM`]
+    );
+
+    res.json({ message: `Iskorišteno ${points} bodova — popust ${popust} KM!`, popust });
+  } catch (err) { next(err); }
+});
 module.exports = router;
