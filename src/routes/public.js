@@ -5,18 +5,21 @@ const { sendBusinessNotification, sendConfirmationSMS } = require('../services/n
 
 router.get('/b/:slug', async (req, res, next) => {
   try {
-    const business = await db.queryOne(
-      `SELECT b.id, b.name, b.type, b.slug, b.description,
-              b.address, b.city, b.phone, b.logo_url, b.working_hours
-       FROM businesses b
-       LEFT JOIN subscriptions s ON s.business_id = b.id
-       WHERE b.slug = $1`,
-      [req.params.slug]
-    );
+   const business = await db.queryOne(
+  `SELECT b.id, b.name, b.type, b.slug, b.description,
+          b.address, b.city, b.phone, b.logo_url, b.working_hours,
+          s.status AS sub_status, s.trial_ends_at
+   FROM businesses b
+   LEFT JOIN subscriptions s ON s.business_id = b.id
+   WHERE b.slug = $1`,
+  [req.params.slug]
+);
     if (!business) return res.status(404).json({ error: 'Salon nije pronađen.' });
 
-    const subActive = business.sub_status === 'active' || business.sub_status === 'trialing';
-    if (!subActive) {
+    const now = new Date();
+const trialActive = business.trial_ends_at && new Date(business.trial_ends_at) > now;
+const subActive = business.sub_status === 'active' || trialActive;
+if (!subActive) {
       return res.json({
         inactive: true,
         business: {
