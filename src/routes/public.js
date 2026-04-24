@@ -105,8 +105,11 @@ router.get('/b/:slug/slots', async (req, res, next) => {
         if (pausaKonflikt) return false;
       }
 
-      return true;
+     return true;
     });
+    res.json({ slots: freeSlots });
+  } catch (err) { next(err); }
+});
 
 router.post('/b/:slug/book', async (req, res, next) => {
   try {
