@@ -23,15 +23,15 @@ router.get('/:businessId', requireBusiness, async (req, res, next) => {
 
 router.post('/:businessId', requireBusiness, async (req, res, next) => {
   try {
-    const { name, description, price, duration, color } = req.body;
+    const { name, description, price, duration, color, break_after, break_duration } = req.body;
     if (!name || !price || !duration) {
       return res.status(400).json({ error: 'Naziv, cijena i trajanje su obavezni.' });
     }
     const service = await db.queryOne(
-      `INSERT INTO services (business_id, name, description, price, duration, color)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      `INSERT INTO services (business_id, name, description, price, duration, color, break_after, break_duration)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [req.params.businessId, name, description || null,
-       price, duration, color || '#4a7c59']
+       price, duration, color || '#4a7c59', break_after || null, break_duration || null]
     );
     res.status(201).json({ service });
   } catch (err) { next(err); }
@@ -39,17 +39,20 @@ router.post('/:businessId', requireBusiness, async (req, res, next) => {
 
 router.patch('/:businessId/:id', requireBusiness, async (req, res, next) => {
   try {
-    const { name, description, price, duration, color, is_active } = req.body;
+   const { name, description, price, duration, color, is_active, break_after, break_duration } = req.body;
     const service = await db.queryOne(
       `UPDATE services SET
-        name        = COALESCE($1, name),
-        description = COALESCE($2, description),
-        price       = COALESCE($3, price),
-        duration    = COALESCE($4, duration),
-        color       = COALESCE($5, color),
-        is_active   = COALESCE($6, is_active)
-       WHERE id = $7 AND business_id = $8 RETURNING *`,
+        name          = COALESCE($1, name),
+        description   = COALESCE($2, description),
+        price         = COALESCE($3, price),
+        duration      = COALESCE($4, duration),
+        color         = COALESCE($5, color),
+        is_active     = COALESCE($6, is_active),
+        break_after   = $7,
+        break_duration = $8
+       WHERE id = $9 AND business_id = $10 RETURNING *`,
       [name, description, price, duration, color, is_active,
+       break_after || null, break_duration || null,
        req.params.id, req.params.businessId]
     );
     if (!service) return res.status(404).json({ error: 'Usluga nije pronađena.' });
