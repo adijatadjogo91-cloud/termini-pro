@@ -108,7 +108,9 @@ Odgovaraj na bosanskom jeziku, kratko i konkretno. Daj specifične savjete sa br
     );
 
     res.json({ reply });
-  } catch (err) { next(err); }
+ } catch (err) { 
+    console.error('[AI PUBLIC CHAT]', err.message);
+    next(err); 
+  }
 });
-
 module.exports = router;
