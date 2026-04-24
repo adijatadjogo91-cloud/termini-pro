@@ -120,6 +120,24 @@ router.patch('/:businessId/:id/status', requireBusiness, async (req, res, next) 
       [status, req.params.id, req.params.businessId]
     );
     if (!appointment) return res.status(404).json({ error: 'Termin nije pronađen.' });
+
+    // Dodaj loyalty bodove kada je termin završen
+    if (status === 'completed' && appointment.client_id && appointment.price) {
+      const bodovi = Math.floor(parseFloat(appointment.price) / 10);
+      if (bodovi > 0) {
+        await db.query(
+          `INSERT INTO loyalty_points (business_id, client_id, appointment_id, points, description)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [req.params.businessId, appointment.client_id, appointment.id, bodovi, `Termin završen — ${bodovi} bodova`]
+        );
+        await db.query(
+          `UPDATE clients SET loyalty_points = COALESCE(loyalty_points, 0) + $1
+           WHERE id = $2`,
+          [bodovi, appointment.client_id]
+        );
+      }
+    }
+
     res.json({ appointment });
   } catch (err) { next(err); }
 });
