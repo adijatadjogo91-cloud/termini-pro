@@ -85,16 +85,28 @@ router.get('/b/:slug/slots', async (req, res, next) => {
          AND status NOT IN ('cancelled','no_show')`,
       [business.id, date]
     );
-    const freeSlots = allSlots.filter(slot => {
+  const freeSlots = allSlots.filter(slot => {
       const sStart = dayjs(`${date} ${slot}`);
       const sEnd = sStart.add(service.duration, 'minute');
-      return !taken.some(t =>
+
+      // Provjera osnovnog termina
+      const konflikt = taken.some(t =>
         sStart.isBefore(dayjs(t.ends_at)) && sEnd.isAfter(dayjs(t.starts_at))
       );
+      if (konflikt) return false;
+
+      // Provjera pauze unutar termina
+      if (service.break_after && service.break_duration) {
+        const pausaStart = sStart.add(service.break_after, 'minute');
+        const pausaEnd = pausaStart.add(service.break_duration, 'minute');
+        const pausaKonflikt = taken.some(t =>
+          pausaStart.isBefore(dayjs(t.ends_at)) && pausaEnd.isAfter(dayjs(t.starts_at))
+        );
+        if (pausaKonflikt) return false;
+      }
+
+      return true;
     });
-    res.json({ slots: freeSlots });
-  } catch (err) { next(err); }
-});
 
 router.post('/b/:slug/book', async (req, res, next) => {
   try {
