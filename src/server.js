@@ -46,6 +46,7 @@ app.use('/api/public',       require('./routes/public'));
 app.use('/api/gallery',      require('./routes/gallery'));
 app.use('/api/reviews',      require('./routes/reviews'));
 app.use('/api/waitlist',     require('./routes/waitlist'));
+app.use('/api/promotions', require('./routes/promotions'));
 app.get('/test-email', async (req, res) => {
   const { Resend } = require('resend');
   const resend = new Resend(process.env.RESEND_API_KEY);
