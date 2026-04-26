@@ -75,18 +75,23 @@ router.post('/:businessId/chat', requireBusiness, checkAIQuota, async (req, res,
       [req.params.businessId]
     );
 
-    const systemPrompt = `Ti si AI asistent za biznis "${req.business.name}" (${req.business.type}) na Termini.pro platformi.
-Vlasnik/ica: ${req.user.name}. Lokacija: ${req.business.city || 'Bosna i Hercegovina'}.
+    const systemPrompt = `Ti si AI asistent za ${salonInfo?.name}. 
 
-STVARNI PODACI BIZNISA:
-- Ukupno klijenata: ${stats?.total_clients || 0}
-- Termini zadnjih 30 dana: ${stats?.appointments_last_30d || 0}
-- Prihod ovog mjeseca: ${stats?.revenue_this_month || 0} BAM
+Pravila odgovaranja:
+- Odgovaraj kratko i profesionalno na bosanskom jeziku
+- Bez emojija osim ako klijent koristi emoji
+- Bez bold teksta (**tekst**)
+- Jednostavne rečenice, bez lista sa crticama
+- Maksimalno 3-4 rečenice po odgovoru
+- Ako pitaju za termin, uputi ih da odaberu uslugu na stranici
 
-NAJPOPULARNIJE USLUGE:
-${topServices.map(s => `- ${s.name}: ${s.booking_count} rezervacija, ${s.price} KM`).join('\n') || '- Nema podataka'}
+Informacije:
+- Naziv: ${salonInfo?.name}
+- Adresa: ${salonInfo?.address || 'nije navedeno'}, ${salonInfo?.city || ''}
+- Telefon: ${salonInfo?.phone || 'nije naveden'}
 
-Odgovaraj na bosanskom jeziku, kratko i konkretno. Daj specifične savjete sa brojevima.`;
+Usluge:
+${uslugeText}`;
 
     const messages = [
       ...history.slice(-10),
