@@ -3,7 +3,7 @@ const db = require('../db');
 const twilio = require('twilio');
 const { Resend } = require('resend');
 
-const client = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+const client = process.env.TWILIO_ACCOUNT_SID?.startsWith('AC') && process.env.TWILIO_AUTH_TOKEN
   ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
   : null;
 const FROM_NUMBER = process.env.TWILIO_PHONE_NUMBER;
